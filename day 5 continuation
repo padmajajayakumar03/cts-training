@@ -1,0 +1,244 @@
+
+mysql> use db;
+Database changed
+mysql> select * from employees;
++--------+---------+--------+------------+
+| emp_id | name    | salary | department |
++--------+---------+--------+------------+
+|      1 | Alice   |  50000 | HR         |
+|      2 | Bob     |  60000 | IT         |
+|      3 | Charlie |  70000 | HR         |
+|      4 | David   |  55000 | IT         |
+|      5 | Eve     |  65000 | Sales      |
+|      6 | Frank   |  52000 | Finance    |
+|      7 | Grace   |  48000 | HR         |
+|      8 | Hannah  |  75000 | IT         |
+|      9 | Ian     |  50000 | Sales      |
+|     10 | Jack    |  58000 | Finance    |
++--------+---------+--------+------------+
+10 rows in set (0.04 sec)
+
+mysql> select name,salary from employees group by department having max(salary);
+ERROR 1055 (42000): Expression #1 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'db.employees.name' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by
+mysql> select name, max(salary) from employees;
+ERROR 1140 (42000): In aggregated query without GROUP BY, expression #1 of SELECT list contains nonaggregated column 'db.employees.name'; this is incompatible with sql_mode=only_full_group_by
+mysql> SELECT name, salary, department
+    -> FROM employees
+    -> WHERE salary > ANY (
+    ->     SELECT salary
+    ->     FROM employees
+    ->     WHERE department <> department
+    -> );
+Empty set (0.01 sec)
+
+mysql> SELECT e1.name, e1.salary, e1.department
+    -> FROM employees e1
+    -> WHERE e1.salary > ANY (
+    ->     SELECT e2.salary
+    ->     FROM employees e2
+    ->     WHERE e2.department <> e1.department
+    -> );
++---------+--------+------------+
+| name    | salary | department |
++---------+--------+------------+
+| Bob     |  60000 | IT         |
+| Charlie |  70000 | HR         |
+| David   |  55000 | IT         |
+| Eve     |  65000 | Sales      |
+| Frank   |  52000 | Finance    |
+| Hannah  |  75000 | IT         |
+| Ian     |  50000 | Sales      |
+| Jack    |  58000 | Finance    |
++---------+--------+------------+
+8 rows in set (0.02 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary > ANY (
+    ->     select salary
+    ->     from employees
+    ->     where name = 'Grace'
+    -> );
++---------+--------+------------+
+| name    | salary | department |
++---------+--------+------------+
+| Alice   |  50000 | HR         |
+| Bob     |  60000 | IT         |
+| Charlie |  70000 | HR         |
+| David   |  55000 | IT         |
+| Eve     |  65000 | Sales      |
+| Frank   |  52000 | Finance    |
+| Hannah  |  75000 | IT         |
+| Ian     |  50000 | Sales      |
+| Jack    |  58000 | Finance    |
++---------+--------+------------+
+9 rows in set (0.02 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary > ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'HR'
+    -> );
++--------+--------+------------+
+| name   | salary | department |
++--------+--------+------------+
+| Hannah |  75000 | IT         |
++--------+--------+------------+
+1 row in set (0.02 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary < ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'it'
+    -> );
++-------+--------+------------+
+| name  | salary | department |
++-------+--------+------------+
+| Alice |  50000 | HR         |
+| Frank |  52000 | Finance    |
+| Grace |  48000 | HR         |
+| Ian   |  50000 | Sales      |
++-------+--------+------------+
+4 rows in set (0.00 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary = ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'sales'
+    -> );
+Empty set (0.00 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary > ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'finance'
+    -> );
++---------+--------+------------+
+| name    | salary | department |
++---------+--------+------------+
+| Bob     |  60000 | IT         |
+| Charlie |  70000 | HR         |
+| Eve     |  65000 | Sales      |
+| Hannah  |  75000 | IT         |
++---------+--------+------------+
+4 rows in set (0.00 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary < ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'sales'
+    -> );
++-------+--------+------------+
+| name  | salary | department |
++-------+--------+------------+
+| Grace |  48000 | HR         |
++-------+--------+------------+
+1 row in set (0.00 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary <> ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'hr'
+    -> );
++--------+--------+------------+
+| name   | salary | department |
++--------+--------+------------+
+| Bob    |  60000 | IT         |
+| David  |  55000 | IT         |
+| Eve    |  65000 | Sales      |
+| Frank  |  52000 | Finance    |
+| Hannah |  75000 | IT         |
+| Jack   |  58000 | Finance    |
++--------+--------+------------+
+6 rows in set (0.04 sec)
+
+mysql> select name, salary, department
+    -> from employees
+    -> where salary > ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'sales'
+    -> );
++---------+--------+------------+
+| name    | salary | department |
++---------+--------+------------+
+| Charlie |  70000 | HR         |
+| Hannah  |  75000 | IT         |
++---------+--------+------------+
+2 rows in set (0.00 sec)
+
+mysql> select name, salary, department
+    -> from employees where department = 'hr' having salary > ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'sales'
+    -> );
++---------+--------+------------+
+| name    | salary | department |
++---------+--------+------------+
+| Charlie |  70000 | HR         |
++---------+--------+------------+
+1 row in set (0.00 sec)
+
+mysql> select name, salary, department
+    -> from employees where department = 'finance' having salary < ALL (
+    ->     select salary
+    ->     from employees
+    ->     where department = 'it'
+    -> );
++-------+--------+------------+
+| name  | salary | department |
++-------+--------+------------+
+| Frank |  52000 | Finance    |
++-------+--------+------------+
+1 row in set (0.00 sec)
+
+mysql> ^C
+mysql> select name, salary, department
+    -> from employees where salary > ALL (
+    ->     select salary
+    ->     from employees
+    ->     where salary < 60000
+    -> );
++---------+--------+------------+
+| name    | salary | department |
++---------+--------+------------+
+| Bob     |  60000 | IT         |
+| Charlie |  70000 | HR         |
+| Eve     |  65000 | Sales      |
+| Hannah  |  75000 | IT         |
++---------+--------+------------+
+4 rows in set (0.00 sec)
+
+mysql> select name, salary, department
+    -> from employees where salary < ALL (
+    ->     select salary
+    ->     from employees
+    ->     where salary > 60000
+    -> );
++-------+--------+------------+
+| name  | salary | department |
++-------+--------+------------+
+| Alice |  50000 | HR         |
+| Bob   |  60000 | IT         |
+| David |  55000 | IT         |
+| Frank |  52000 | Finance    |
+| Grace |  48000 | HR         |
+| Ian   |  50000 | Sales      |
+| Jack  |  58000 | Finance    |
++-------+--------+------------+
+7 rows in set (0.00 sec)
+
+mysql>
